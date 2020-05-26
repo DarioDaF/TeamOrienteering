@@ -87,6 +87,13 @@ class TOP_Output {
     double TravelTime(idx_t car) const { return travel_time[car]; }
     bool Feasible() const { return time_violations == 0; }
     int PointProfit() const { return point_profit; }
+    
+    int Hops(idx_t car) const { return car_hops[car].size() + 1; }
+    idx_t Hop(idx_t car, idx_t hop) const {
+      if(hop == 0) return in.StartPoint();
+      if(hop > car_hops[car].size()) return in.EndPoint();
+      return car_hops[car][hop - 1];
+    }
   private:
     const TOP_Input& in;
     std::vector<std::vector<idx_t>> car_hops; // car_hops[car][hop] = point
