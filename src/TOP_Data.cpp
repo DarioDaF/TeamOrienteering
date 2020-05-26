@@ -57,20 +57,25 @@ ostream& operator<<(ostream& os, const TOP_Input& in) {
 
 void TOP_Output::Clear() {
   fill(visited.begin(), visited.end(), 0);
-  visited[in.StartPoint()] = in.Cars();
+  visited[in.StartPoint()] += in.Cars();
+  visited[in.EndPoint()] += in.Cars();
 
   for(idx_t car = 0; car < in.Cars(); ++car) {
     car_hops[car].clear();
   }
 
-  fill(travel_time.begin(), travel_time.end(), 0);
+  double zeroTravelTime = in.Point(in.StartPoint()).Distance(in.Point(in.EndPoint()));
+  fill(travel_time.begin(), travel_time.end(), zeroTravelTime);
 
   point_profit = in.Point(in.StartPoint()).Profit();
+  if(in.EndPoint() != in.StartPoint()) {
+    point_profit = in.Point(in.EndPoint()).Profit();
+  }
   time_violations = 0;
 }
 
 void TOP_Output::MoveCar(idx_t car, idx_t dest) {
-  IncrementTravelTime(car, in.Point(CarPoint(car)).Distance(in.Point(dest)));
+  IncrementTravelTime(car, SimulateMoveCar(car, dest).extraTravelTime);
 
   car_hops[car].push_back(dest);
   IncrementVisited(dest, 1);
@@ -82,34 +87,24 @@ idx_t TOP_Output::RollbackCar(idx_t car) {
   }
 
   idx_t last = CarPoint(car);
-  
+
   IncrementVisited(last, -1);
   car_hops[car].pop_back();
-  
-  idx_t current = CarPoint(car);
-  IncrementTravelTime(car, -in.Point(last).Distance(in.Point(current)));
-  
+
+  IncrementTravelTime(car, -SimulateMoveCar(car, last).extraTravelTime);
+
   return last;
 }
 
-void TOP_Output::ClosePaths() {
-  for(idx_t car = 0; car < in.Cars(); ++car) {
-    if(CarPoint(car) != in.EndPoint()) {
-      MoveCar(car, in.EndPoint());
-    }
-  }
-}
-
-bool TOP_Output::Feasible() const {
-  if(!PartiallyFeasible())
-    return false;
+const TOP_Output::SimulateMoveCarResult TOP_Output::SimulateMoveCar(idx_t car, idx_t dest) const {
+  const TOP_Point pPart = in.Point(CarPoint(car));
+  const TOP_Point pEnd = in.Point(in.EndPoint());
+  const TOP_Point pDest = in.Point(dest);
   
-  for(idx_t car = 0; car < in.Cars(); ++car) {
-    if(CarPoint(car) != in.EndPoint()) {
-      return false;
-    }
-  }
-  return true;
+  TOP_Output::SimulateMoveCarResult res;
+  res.extraTravelTime = pPart.Distance(pDest) + pDest.Distance(pEnd) - pPart.Distance(pEnd);
+  res.feasible = res.extraTravelTime + TravelTime(car) <= in.MaxTime();
+  return res;
 }
 
 // Internals

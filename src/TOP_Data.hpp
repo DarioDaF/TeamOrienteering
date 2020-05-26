@@ -19,7 +19,7 @@ Input format:
     {x} '\t' {y} '\t' {profit}
   {end for}
 
-Output format:
+Output format: (start and end points are implicit)
   h {Hops}
   {for Hops}
     {car} '\t' {dest}
@@ -69,6 +69,11 @@ class TOP_Output {
     friend std::ostream& operator<<(std::ostream& os, const TOP_Output& out);
     friend std::istream& operator>>(std::istream& is, TOP_Output& out);
   public:
+    struct SimulateMoveCarResult {
+      bool feasible;
+      double extraTravelTime;
+    };
+
     TOP_Output(const TOP_Input& in) : in(in),
       car_hops(in.Cars()), visited(in.Points()),
       travel_time(in.Cars()) { Clear(); }
@@ -76,12 +81,11 @@ class TOP_Output {
 
     bool Visited(idx_t point) const { return visited[point] > 0; }
     void MoveCar(idx_t car, idx_t dest); // Moves the car
+    const SimulateMoveCarResult SimulateMoveCar(idx_t car, idx_t dest) const; // Simulate MoveCar and returns cost difference
     idx_t CarPoint(idx_t car) const { return car_hops[car].empty() ? in.StartPoint() : car_hops[car].back(); }
     idx_t RollbackCar(idx_t car); // Rollback last move car and returns freed point
     double TravelTime(idx_t car) const { return travel_time[car]; }
-    bool PartiallyFeasible() const { return time_violations; }
-    bool Feasible() const;
-    void ClosePaths();
+    bool Feasible() const { return time_violations == 0; }
     int PointProfit() const { return point_profit; }
   private:
     const TOP_Input& in;
