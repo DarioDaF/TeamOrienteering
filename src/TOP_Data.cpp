@@ -74,11 +74,15 @@ void TOP_Output::Clear() {
   time_violations = 0;
 }
 
-void TOP_Output::MoveCar(idx_t car, idx_t dest) {
-  IncrementTravelTime(car, SimulateMoveCar(car, dest).extraTravelTime);
+const TOP_Output::SimulateMoveCarResult TOP_Output::MoveCar(idx_t car, idx_t dest, bool force) {
+  const auto res = SimulateMoveCar(car, dest);
+  if(force || res.feasible) {
+    IncrementTravelTime(car, res.extraTravelTime);
 
-  car_hops[car].push_back(dest);
-  IncrementVisited(dest, 1);
+    car_hops[car].push_back(dest);
+    IncrementVisited(dest, 1);
+  }
+  return res;
 }
 
 idx_t TOP_Output::RollbackCar(idx_t car) {

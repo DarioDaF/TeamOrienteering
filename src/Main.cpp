@@ -7,9 +7,40 @@
 
 using namespace std;
 
+double ComputePointProfitPerDistance(idx_t car, idx_t dest, const TOP_Input &in, const TOP_Output& out) {
+  if(out.Visited(dest)) return 0;
+  int profit = in.Point(dest).Profit();
+  double dist = out.SimulateMoveCar(car, dest).extraTravelTime;
+  return profit / dist;
+}
+
 void Solve(const TOP_Input &in, TOP_Output& out) {
   // Sover
+  NumberRange<idx_t> carIdxs(in.Cars());
+  NumberRange<idx_t> pointIdxs(in.Points());
+  
+  //vector<bool> markedCars(in.Cars());
 
+  while(true) {
+    // Assign minimum travel time car
+    idx_t chosenCar = *min_element(carIdxs.begin(), carIdxs.end(), [&in, &out](idx_t c1, idx_t c2) {
+      return out.TravelTime(c1) < out.TravelTime(c2);
+    });
+
+    // Search point with most bucks per distance
+    idx_t chosenPoint = *max_element(pointIdxs.begin(), pointIdxs.end(), [&in, &out, &chosenCar](idx_t p1, idx_t p2) {
+      return ComputePointProfitPerDistance(chosenCar, p1, in, out) < ComputePointProfitPerDistance(chosenCar, p2, in, out);
+    });
+
+    cerr << "Moving car " << chosenCar << " to " << chosenPoint << endl;
+
+    if(!out.MoveCar(chosenCar, chosenPoint, false).feasible) {
+      //markedCars[chosenCar] = true;
+      break;
+    }
+  }
+
+/*
   NumberRange<idx_t> pointIdxs(in.Points());
 
   {
@@ -29,16 +60,8 @@ void Solve(const TOP_Input &in, TOP_Output& out) {
 
   {
     cerr << "Find multiple max..." << endl;
-    //auto res = min_elements(pointIdxs.begin(), pointIdxs.end(), [&in](idx_t i1, idx_t i2) {
-    /*
     auto res = min_elements(in.Points(), [&in](idx_t i1, idx_t i2) {
       return in.Point(i2).Profit() - in.Point(i1).Profit(); // Inverted because searching for max
-    });
-    */
-    auto res = min_elements(in.Points(), [&in](auto p1, auto p2) {
-      return p2 - p1; // Compare values, inverted because searching for max
-    }, [&in](idx_t i) {
-      return in.Point(i).Profit(); // Provide value to compare (optional, use idxs if not present)
     });
     for(const auto& el : res) {
       cerr << el << "\t-> " << in.Point(el) << endl;
@@ -55,6 +78,7 @@ void Solve(const TOP_Input &in, TOP_Output& out) {
       cerr << el << "\t-> " << in.Point(el) << endl;
     }
   }
+*/
 
 }
 

@@ -81,7 +81,7 @@ class TOP_Output {
     void Clear();
 
     bool Visited(idx_t point) const { return visited[point] > 0; }
-    void MoveCar(idx_t car, idx_t dest); // Moves the car
+    const SimulateMoveCarResult MoveCar(idx_t car, idx_t dest, bool force = true); // Moves the car
     const SimulateMoveCarResult SimulateMoveCar(idx_t car, idx_t dest) const; // Simulate MoveCar and returns cost difference
     idx_t CarPoint(idx_t car) const { return car_hops[car].empty() ? in.StartPoint() : car_hops[car].back(); }
     idx_t RollbackCar(idx_t car); // Rollback last move car and returns freed point
