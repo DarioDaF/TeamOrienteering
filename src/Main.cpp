@@ -45,58 +45,20 @@ void Solve(const TOP_Input &in, TOP_Output& out) {
     bool done = false;
     while(!done) {
       if(i >= orderedPoints.size() || out.Visited(orderedPoints[i])) {
-        cerr << "Marking car " << chosenCar << endl;
+        cerr << "    Marking car " << chosenCar << endl;
         markedCars[chosenCar] = true;
         break;
       }
 
       done = out.MoveCar(chosenCar, orderedPoints[i], false).feasible;
-      cerr << "Moving car " << chosenCar << " to " << orderedPoints[i] << (done ? " OK" : " FAILED") << endl;
+      //cerr << "    Moving car " << chosenCar << " to " << orderedPoints[i] << (done ? " OK" : " FAILED") << endl;
+      if(done) {
+        cerr << "    Moving car " << chosenCar << " to " << orderedPoints[i] << endl;
+      }
 
       ++i;
     }
   }
-
-/*
-  NumberRange<idx_t> pointIdxs(in.Points());
-
-  {
-    cerr << "List points..." << endl;
-    for(idx_t i : pointIdxs) {
-      cerr << in.Point(i) << endl;
-    }
-  }
-
-  {
-    cerr << "Find max..." << endl;
-    auto res = *max_element(pointIdxs.begin(), pointIdxs.end(), [&in](idx_t i1, idx_t i2) {
-      return in.Point(i1).Profit() < in.Point(i2).Profit();
-    });
-    cerr << "Max: " << res << " -> " << in.Point(res) << endl;
-  }
-
-  {
-    cerr << "Find multiple max..." << endl;
-    auto res = min_elements(in.Points(), [&in](idx_t i1, idx_t i2) {
-      return in.Point(i2).Profit() - in.Point(i1).Profit(); // Inverted because searching for max
-    });
-    for(const auto& el : res) {
-      cerr << el << "\t-> " << in.Point(el) << endl;
-    }
-  }
-
-  {
-    cerr << "Sort idxs..." << endl;
-    vector<idx_t> v = pointIdxs.Vector();
-    sort(v.begin(), v.end(), [&in](auto i1, auto i2) {
-      return in.Point(i1).Profit() > in.Point(i2).Profit();
-    });
-    for(const auto& el : v) {
-      cerr << el << "\t-> " << in.Point(el) << endl;
-    }
-  }
-*/
-
 }
 
 
@@ -104,30 +66,36 @@ void Solve(const TOP_Input &in, TOP_Output& out) {
 namespace fs = std::filesystem;
 
 int main(int argc, char* argv[]) {
-  if(argc != 2) {
-    cerr << "Usage " << argv[0] << " [input_file]" << endl;
-    return 1;
-  }
+  int errors = 0;
 
   TOP_Input in;
-  {
-    ifstream is(argv[1]);
-    if(!is) {
-      cerr << "Unable to open file " << argv[1] << endl;
-      return 1;
+  for(const auto& file : fs::directory_iterator("./Instances")) {
+    if(file.path().extension() != ".txt") continue;
+
+    cerr << "Processing: " << file.path().filename() << endl;
+    {
+      ifstream is(file.path());
+      if(!is) {
+        ++errors;
+        cerr << "  ERROR: Unable to open file" << endl;
+        continue;
+      }
+      is >> in;
     }
-    is >> in;
-  }
-  TOP_Output out(in);
+    TOP_Output out(in);
 
-  out.Clear();
-  Solve(in, out);
+    Solve(in, out);
 
-  if(!out.Feasible()) {
-    cout << "Invalid solution" << endl;
-  } else {
-    cout << "Solution found: " << out.PointProfit() << endl;
+    if(!out.Feasible()) {
+      cerr << "  Invalid solution" << endl;
+      cout << file.path().filename() << ',' << -1 << endl;
+    } else {
+      cerr << "  Solution found: " << out.PointProfit() << endl;
+      cout << file.path().filename() << ',' << out.PointProfit() << endl;
+    }
   }
+
+  cerr << "Total errors: " << errors << endl;
 
   return 0;
 }
