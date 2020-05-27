@@ -5,9 +5,11 @@
 #include <fstream>
 #include <algorithm>
 
+#define VERSION "0.1"
+
 using namespace std;
 
-void Solve(const TOP_Input &in, TOP_Output& out) {
+void Solve(const TOP_Input& in, TOP_Output& out) {
   // Sover
 
   NumberRange<idx_t> pointIdxs(in.Points());
@@ -35,7 +37,7 @@ void Solve(const TOP_Input &in, TOP_Output& out) {
       return in.Point(i2).Profit() - in.Point(i1).Profit(); // Inverted because searching for max
     });
     */
-    auto res = min_elements(in.Points(), [&in](auto p1, auto p2) {
+    auto res = min_elements(in.Points(), [](auto p1, auto p2) {
       return p2 - p1; // Compare values, inverted because searching for max
     }, [&in](idx_t i) {
       return in.Point(i).Profit(); // Provide value to compare (optional, use idxs if not present)
@@ -58,7 +60,43 @@ void Solve(const TOP_Input &in, TOP_Output& out) {
 
 }
 
+#include <map>
+#include <string>
+typedef void (*solver_f)(const TOP_Input&, TOP_Output&);
+const map<string, solver_f> solvers {
+  {"simple", Solve},
+  {"pro", Solve}
+};
+
+
+
+#include <tclap/CmdLine.h>
+
+template<class _It, class _Op>
+auto transform(_It begin, _It end, _Op op) {
+  vector<decltype(op(*begin))> res(end - begin);
+  std::transform(begin, end, res.begin(), op);
+  return res;
+}
+
 int main(int argc, char* argv[]) {
+  try {
+
+    TCLAP::CmdLine cl("TOP solver frontend", ' ', VERSION);
+    
+    vector<string> solverNames(solvers.size());
+    std::transform(solvers.begin(), solvers.end(), solverNames.begin(), [](auto mapEl) { return mapEl.first; });
+    TCLAP::ValuesConstraint<string> argConstSolver(solverNames);
+
+    TCLAP::ValueArg<string> argSolver("s", "solver", "Solver to use", false, "simple", &argConstSolver, cl);
+
+    cl.parse(argc, argv);
+
+    cout << argSolver.getValue();
+  } catch(TCLAP::ArgException& e) {
+    cerr << "ERORR: " << e.error() << " for arg " << e.argId() << endl;
+  }
+/*
   if(argc != 2) {
     cerr << "Usage " << argv[0] << " [input_file]" << endl;
     return 1;
@@ -83,6 +121,6 @@ int main(int argc, char* argv[]) {
   } else {
     cout << "Solution found: " << out.PointProfit() << endl;
   }
-
+*/
   return 0;
 }

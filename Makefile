@@ -1,5 +1,5 @@
 OBJ_FILES=src/TOP_Data.o
-CPPFLAGS=-std=c++17 -O3
+CPPFLAGS=-std=c++17 -O3 -Iinclude
 LDFLAGS=
 
 Main.exe: src/Main.o $(OBJ_FILES)
