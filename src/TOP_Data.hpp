@@ -1,11 +1,11 @@
 #ifndef TOP_DATA_HPP
 #define TOP_DATA_HPP
 
+#include "Utils.hpp"
+
 #include <iostream>
 #include <vector>
 #include <cmath>
-
-typedef int idx_t;
 
 // Functions inside class are inlined
 
@@ -24,6 +24,7 @@ Output format: (start and end points are implicit)
   {for Hops}
     {car} '\t' {dest}
   {end for}
+
 */
 
 class TOP_Point {

@@ -7,7 +7,7 @@ using namespace std;
 // IO
 
 ostream& operator<<(ostream& os, const TOP_Point& p) {
-  os << p.x << "\t" << p.y << "\t" << p.p << endl;
+  os << p.x << "\t" << p.y << "\t" << p.p;
   return os;
 }
 
@@ -46,7 +46,7 @@ ostream& operator<<(ostream& os, const TOP_Input& in) {
   os << "m " << in.cars << endl;
   os << "tmax " << in.max_time << endl;
   for(int i = 0; i < in.points.size(); ++i) {
-    os << in.points[i];
+    os << in.points[i] << endl;
   }
   return os;
 }
