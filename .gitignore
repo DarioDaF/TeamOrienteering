@@ -4,3 +4,5 @@
 context.bat
 Instances/**
 !Instances/.keep
+Outputs*/**
+!Outputs/.keep

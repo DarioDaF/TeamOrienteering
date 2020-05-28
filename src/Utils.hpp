@@ -90,4 +90,13 @@ std::vector<idx_t> min_elements(idx_t size, _Pred pred) {
   return min_elements(NumberIterator(0), NumberIterator(size), pred, [](auto x) { return x; });
 }
 
+template<typename T>
+T so_cmp(const T& x, const T& y) {
+  return x - y;
+}
+template<typename T>
+T so_negcmp(const T& x, const T& y) {
+  return y - x;
+}
+
 #endif

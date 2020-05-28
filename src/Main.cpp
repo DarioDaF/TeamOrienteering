@@ -7,6 +7,10 @@
 
 using namespace std;
 
+// DARIO
+
+
+
 double ComputePointProfitPerDistance(idx_t car, idx_t dest, const TOP_Input &in, const TOP_Output& out) {
   if(out.Visited(dest)) return 0;
   int profit = in.Point(dest).Profit();
@@ -15,7 +19,7 @@ double ComputePointProfitPerDistance(idx_t car, idx_t dest, const TOP_Input &in,
   return profit / dist;
 }
 
-void Solve(const TOP_Input &in, TOP_Output& out) {
+void SolveDario(const TOP_Input &in, TOP_Output& out) {
   // Sover
   NumberRange<idx_t> carIdxs(in.Cars());
   NumberRange<idx_t> pointIdxs(in.Points());
@@ -49,7 +53,6 @@ void Solve(const TOP_Input &in, TOP_Output& out) {
         markedCars[chosenCar] = true;
         break;
       }
-
       done = out.MoveCar(chosenCar, orderedPoints[i], false).feasible;
       //cerr << "    Moving car " << chosenCar << " to " << orderedPoints[i] << (done ? " OK" : " FAILED") << endl;
       if(done) {
@@ -58,6 +61,73 @@ void Solve(const TOP_Input &in, TOP_Output& out) {
 
       ++i;
     }
+  }
+}
+
+// KEVIN
+
+double RatingChoice(const TOP_Input &in, const TOP_Output& out, idx_t car, idx_t p, double meanProfit) {
+  if(out.Visited(p)) {
+    return -INFINITY;
+  }
+
+  double profit = in.Point(p).Profit();
+  //double alpha = profit / meanProfit;
+
+  double gamma = out.TravelTime(car) / in.MaxTime();
+  double extraTravelTimeNorm = out.SimulateMoveCar(car, p).extraTravelTime / (in.MaxTime() - out.TravelTime(car));
+
+  //return alpha * profit - gamma * extraTravelTime;
+  return profit / meanProfit - gamma * extraTravelTimeNorm;
+}
+
+void SolveKevin(const TOP_Input &in, TOP_Output& out) {
+  // Sover
+  NumberRange<idx_t> carIdxs(in.Cars());
+  NumberRange<idx_t> pointIdxs(in.Points());
+
+  vector<bool> markedCars(in.Cars());
+
+  int notVisitedCount = 0;
+  int sumProfit = 0;
+  for(const auto& p : pointIdxs) {
+    if(!out.Visited(p)) {
+      sumProfit += in.Point(p).Profit();
+      ++notVisitedCount;
+    }
+  }
+
+  while(true) {
+    // Assign minimum travel time car
+    idx_t chosenCar = *min_element(carIdxs.begin(), carIdxs.end(), [&in, &out, &markedCars](idx_t c1, idx_t c2) {
+      // If marked travel time is infinite!
+      if(markedCars[c1]) return false;
+      if(markedCars[c2]) return true;
+      return out.TravelTime(c1) < out.TravelTime(c2);
+    });
+
+    if(markedCars[chosenCar]) {
+      break; // All cars are marked
+    }
+
+    auto maxPoints = min_elements(in.Points(), so_negcmp<double>, [&in, &out, &chosenCar, &sumProfit, &notVisitedCount](idx_t p) -> double {
+      if(!out.SimulateMoveCar(chosenCar, p).feasible) return -INFINITY;
+      return RatingChoice(in, out, chosenCar, p, ((double)sumProfit) / notVisitedCount);
+    });
+
+    idx_t chosenPoint = maxPoints[0];
+
+    cerr << "  Assign car " << chosenCar << " to " << chosenPoint << endl;
+
+    if(out.Visited(chosenPoint) || !out.MoveCar(chosenCar, chosenPoint, false).feasible) {
+      // Ho finito tutti i punti sicuramente di questa macchina
+      markedCars[chosenCar] = true;
+      continue;
+    }
+
+    // update meanProfit
+    --notVisitedCount;
+    sumProfit -= in.Point(chosenPoint).Profit();
   }
 }
 
@@ -84,7 +154,7 @@ int main(int argc, char* argv[]) {
     }
     TOP_Output out(in);
 
-    Solve(in, out);
+    SolveDario(in, out);
 
     if(!out.Feasible()) {
       cerr << "  Invalid solution" << endl;
@@ -93,9 +163,19 @@ int main(int argc, char* argv[]) {
       cerr << "  Solution found: " << out.PointProfit() << endl;
       cout << file.path().filename() << ',' << out.PointProfit() << endl;
     }
+
+    {
+      ofstream os("Outputs" / file.path().filename().replace_extension(".out"));
+      if(!os) {
+        ++errors;
+        cerr << "  ERROR: Unable to open output file" << endl;
+        continue;
+      }
+      os << in << out;
+    }
   }
 
-  cerr << "Total errors: " << errors << endl;
+  cerr << "Total errors: " << ((double)errors) / 2 << endl;
 
   return 0;
 }
