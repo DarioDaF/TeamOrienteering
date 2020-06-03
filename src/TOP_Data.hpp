@@ -74,11 +74,32 @@ class TOP_Output {
       bool feasible;
       double extraTravelTime;
     };
+    enum InsertMode {
+      SIMULATE,
+      NORMAL,
+      FORCE
+    };
 
     TOP_Output(const TOP_Input& in) : in(in),
       car_hops(in.Cars()), visited(in.Points()),
       travel_time(in.Cars()) { Clear(); }
     void Clear();
+
+    TOP_Output(const TOP_Output& out) : in(out.in),
+      car_hops(out.car_hops), visited(out.visited),
+      travel_time(out.travel_time),
+      point_profit(out.point_profit),
+      time_violations(out.time_violations) {}
+
+    TOP_Output& operator=(const TOP_Output& out) {
+      const_cast<TOP_Input&>(this->in) = out.in;
+      this->car_hops = out.car_hops;
+      this->visited = out.visited;
+      this->travel_time = out.travel_time;
+      this->point_profit = out.point_profit;
+      this->time_violations = out.time_violations;
+      return *this;
+    }
 
     bool Visited(idx_t point) const { return visited[point] > 0; }
     const SimulateMoveCarResult MoveCar(idx_t car, idx_t dest, bool force = true); // Moves the car
@@ -95,6 +116,8 @@ class TOP_Output {
       if(hop > car_hops[car].size()) return in.EndPoint();
       return car_hops[car][hop - 1];
     }
+    const SimulateMoveCarResult InsertHop(idx_t car, idx_t hop, idx_t dest, InsertMode mode = FORCE);
+    const SimulateMoveCarResult RemoveHop(idx_t car, idx_t hop);
   private:
     const TOP_Input& in;
     std::vector<std::vector<idx_t>> car_hops; // car_hops[car][hop] = point
@@ -107,5 +130,9 @@ class TOP_Output {
     void IncrementVisited(idx_t point, int count);
     void IncrementTravelTime(idx_t car, double count);
 };
+
+// Internals
+
+double extraDistance(TOP_Point pStart, TOP_Point pNew, TOP_Point pEnd);
 
 #endif

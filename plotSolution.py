@@ -34,7 +34,7 @@ class Output:
       i += 1
       self.hops[int(c)].append(int(p))
 
-fname = './OutputsKevin/p7.4.t.out'
+fname = './Outputs/p1.2.h.out'
 with open(fname, 'r') as fp:
   ls = fp.readlines()
 o = Output(ls)
@@ -60,7 +60,7 @@ plt.colorbar()
 #   x.append(o.points[-1][0])
 #   y.append(o.points[-1][1])
 #   plt.plot(x, y, '-')
-head_width = 1
+head_width = .5
 hue = 0
 step = 1.0 / o.m
 for car, chops in o.hops.items():

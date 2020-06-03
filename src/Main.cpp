@@ -9,8 +9,100 @@ using namespace std;
 
 // DARIO
 
+/*
+
+Per ogni nodo calcola il profitto, ma il profitto tiene conto dei
+nodi "vicini" alla traiettoria, quindi se un nodo è nella stessa direzione
+scarica il suo guadagno su quelli precedenti
 
 
+*/
+
+struct move_t {
+  idx_t car;
+  idx_t point;
+};
+bool operator==(move_t a, move_t b) {
+  return a.car == b.car && a.point == b.point;
+}
+bool operator!=(move_t a, move_t b) {
+  return a.car != b.car || a.point != b.point;
+}
+
+bool MoveNext(const TOP_Input& in, TOP_Output& out, vector<bool>& markedCar, move_t& move) {
+  if(move != move_t { 0, -1 }) {
+    out.RollbackCar(move.car);
+    //markedCar[move.car] = false; // Clean car
+    // Clean all, any car can go to the freed point :(
+    // 24 s with marked and 38 s without on "p1.2.g.txt"
+    fill(markedCar.begin(), markedCar.end(), false); // Slows?
+  }
+
+  ++move.point; // Do not repeat same
+  // Try to assign any car one more time to non visited points
+  // Sort in some way?
+  for(; move.car < in.Cars(); ++move.car) {
+    if(markedCar[move.car]) continue;
+    for(; move.point < in.Points(); ++move.point) {
+      if(out.Visited(move.point)) continue;
+      // Assign
+      if(out.MoveCar(move.car, move.point, false).feasible) {
+        return true;
+        //return move; // Used for stack rollback and move forward
+      }
+    }
+    move.point = -1; // Reset on next car
+    markedCar[move.car] = true;
+  }
+  move = { 0, -1 }; // ?
+  return false;
+  //return { 0, -1 }; // Fake/restart to signal unreachable
+}
+
+move_t MoveDown(const TOP_Input& in, TOP_Output& out, vector<bool>& markedCar) {
+  move_t move = { 0, -1 };
+  MoveNext(in, out, markedCar, move);
+  return move;
+}
+
+void Solve(const TOP_Input &in, TOP_Output& out) {
+  vector<bool> markedCar(in.Cars()); // CANNOT MARK CAR, EVERY NODE FREED CLEARS MARKED!
+  vector<move_t> moveStack;
+
+  int bestProfit = 0;
+  TOP_Output bestSolution(in);
+  while(true) {
+    move_t move = { 0, -1 };
+    while(MoveNext(in, out, markedCar, move)) {
+      // Got deeper
+      moveStack.push_back(move);
+      move = { 0, -1 };
+    }
+    // Filled all
+    if(moveStack.empty()) {
+      // Finished (might happen if 0 solutions)
+      return;
+    }
+    // Leaf
+    int currProfit = out.PointProfit();
+    if(currProfit > bestProfit) {
+      cerr << "  New best solution: " << currProfit << endl;
+      bestProfit = currProfit;
+      bestSolution = out; // Copy
+    }
+    // Go to next or up
+    while(!MoveNext(in, out, markedCar, moveStack.back())) {
+      moveStack.pop_back();
+      if(moveStack.empty()) {
+        // Finished
+        out = bestSolution;
+        return;
+      }
+    }
+  }
+}
+
+/*
 double ComputePointProfitPerDistance(idx_t car, idx_t dest, const TOP_Input &in, const TOP_Output& out) {
   if(out.Visited(dest)) return 0;
   int profit = in.Point(dest).Profit();
@@ -130,7 +222,7 @@ void SolveKevin(const TOP_Input &in, TOP_Output& out) {
     sumProfit -= in.Point(chosenPoint).Profit();
   }
 }
-
+*/
 
 #include <filesystem>
 namespace fs = std::filesystem;
@@ -154,7 +246,7 @@ int main(int argc, char* argv[]) {
     }
     TOP_Output out(in);
 
-    SolveDario(in, out);
+    Solve(in, out);
 
     if(!out.Feasible()) {
       cerr << "  Invalid solution" << endl;

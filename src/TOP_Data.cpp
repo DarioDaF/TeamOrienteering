@@ -111,7 +111,36 @@ const TOP_Output::SimulateMoveCarResult TOP_Output::SimulateMoveCar(idx_t car, i
   return res;
 }
 
+const TOP_Output::SimulateMoveCarResult TOP_Output::InsertHop(idx_t car, idx_t hop, idx_t dest, TOP_Output::InsertMode mode) {
+  TOP_Output::SimulateMoveCarResult res;
+  res.extraTravelTime = extraDistance(in.Point(Hop(car, hop - 1)), in.Point(dest), in.Point(Hop(car, hop)));
+  res.feasible = TravelTime(car) + res.extraTravelTime <= in.MaxTime();
+
+  if(mode != SIMULATE && (mode == FORCE || res.feasible)) {
+    IncrementTravelTime(car, res.extraTravelTime);
+
+    car_hops[car].emplace(car_hops[car].begin() + hop - 1, dest);
+    IncrementVisited(dest, 1);
+  }
+  return res;
+}
+const TOP_Output::SimulateMoveCarResult TOP_Output::RemoveHop(idx_t car, idx_t hop) {
+  idx_t last = Hop(car, hop);
+
+  IncrementVisited(last, -1);
+  car_hops[car].erase(car_hops[car].begin() + hop - 1);
+
+  double extraDist = extraDistance(in.Point(Hop(car, hop)), in.Point(last), in.Point(Hop(car, hop + 1)));
+  IncrementTravelTime(car, -extraDist);
+
+  return (TOP_Output::SimulateMoveCarResult){ .feasible = TravelTime(car) <= in.MaxTime(), .extraTravelTime = extraDist };
+}
+
 // Internals
+
+double extraDistance(TOP_Point pStart, TOP_Point pNew, TOP_Point pEnd) {
+  return pStart.Distance(pNew) + pNew.Distance(pEnd) - pStart.Distance(pEnd);
+}
 
 void TOP_Output::IncrementTravelTime(idx_t car, double count) {
   bool pre_violation = travel_time[car] > in.MaxTime();
